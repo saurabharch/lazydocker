@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"syscall"
 	"time"
 )
 
@@ -80,7 +79,7 @@ type tunneledDockerHost struct {
 var _ io.Closer = (*tunneledDockerHost)(nil)
 
 func (t *tunneledDockerHost) Close() error {
-	return syscall.Kill(-t.cmd.Process.Pid, syscall.SIGKILL)
+	return t.cmd.Process.Kill()
 }
 
 func (self *SSHHandler) createDockerHostTunnel(ctx context.Context, remoteHost string) (*tunneledDockerHost, error) {
@@ -147,7 +146,6 @@ func (self *SSHHandler) tryDial(ctx context.Context, socketPath string) error {
 
 func (self *SSHHandler) tunnelSSH(ctx context.Context, host, localSocket string) (*exec.Cmd, error) {
 	cmd := exec.CommandContext(ctx, "ssh", "-L", localSocket+":/var/run/docker.sock", host, "-N")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err := self.deps.startCmd(cmd)
 	if err != nil {
 		return nil, err
